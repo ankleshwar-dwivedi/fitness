@@ -1,0 +1,125 @@
+# FitTrack API Documentation (v0)
+
+**Base URL**: `http://localhost:5000/api/v0`
+
+---
+
+### Authentication
+
+**Register User**
+*   **Endpoint**: `POST /auth/register`
+*   **Access**: Public
+*   **Body**: `{ "name": "Test User", "email": "test@example.com", "password": "password123", "passwordConfirm": "password123", "gender": "male", "dateOfBirth": "1990-01-15" }`
+*   **Response**: `201 Created` with user object & JWT cookie.
+
+**Login User**
+*   **Endpoint**: `POST /auth/login`
+*   **Access**: Public
+*   **Body**: `{ "email": "test@example.com", "password": "password123" }`
+*   **Response**: `200 OK` with user object & JWT cookie.
+
+**Logout User**
+*   **Endpoint**: `POST /auth/logout`
+*   **Access**: Private
+*   **Response**: `200 OK` with `{ "message": "Logged out successfully" }`
+
+**Get Google Auth URL**
+*   **Endpoint**: `GET /auth/google`
+*   **Access**: Public
+*   **Response**: `200 OK` with `{ "url": "https://accounts.google.com/o/oauth2/..." }`
+
+---
+
+### User Profile
+
+**Get My Profile**
+*   **Endpoint**: `GET /users/me`
+*   **Access**: Private
+*   **Response**: `200 OK` with user object.
+
+**Update My Profile**
+*   **Endpoint**: `PUT /users/me`
+*   **Access**: Private
+*   **Body**: `{ "name": "New Name", "gender": "female" }`
+*   **Response**: `200 OK` with updated user object.
+
+---
+
+### Fitness Plan
+
+**Get My Fitness Plan**
+*   **Endpoint**: `GET /fitness/plan`
+*   **Access**: Private
+*   **Response**: `200 OK` with fitness plan object (includes BMR, TDEE).
+
+**Create/Update My Fitness Plan**
+*   **Endpoint**: `PUT /fitness/plan`
+*   **Access**: Private
+*   **Body**: `{ "heightCm": 180, "weightKg": 75, "dateOfBirth": "1990-01-15", "gender": "male", "activityLevel": "moderate", "goal": "maintain" }`
+*   **Response**: `200 OK` with updated fitness plan object.
+
+---
+
+### Logging
+
+**Log a Meal**
+*   **Endpoint**: `POST /log/meals`
+*   **Access**: Private
+*   **Body**: `{ "description": "1 cup of oatmeal with banana", "mealType": "breakfast", "date": "2023-10-27T00:00:00.000Z" }`
+*   **Response**: `201 Created` with the new meal log object.
+
+**Log a Workout**
+*   **Endpoint**: `POST /log/workouts`
+*   **Access**: Private
+*   **Body**: `{ "description": "Bench press", "durationMin": 45, "date": "2023-10-27T00:00:00.000Z" }`
+*   **Response**: `201 Created` with the new workout log object.
+
+**Get Logs for a Specific Date**
+*   **Endpoint**: `GET /log/date/:date` (e.g., `/log/date/2023-10-27`)
+*   **Access**: Private
+*   **Response**: `200 OK` with `{ "meals": [...], "workouts": [...] }`
+
+---
+
+### Planner (NEW)
+
+**Get Suggested Meal Plan**
+*   **Endpoint**: `GET /planner/meals/suggested`
+*   **Access**: Private
+*   **Response**: `200 OK` with a suggested meal plan object based on user's TDEE.
+
+**Get Weekly Workout Plan**
+*   **Endpoint**: `GET /planner/workouts`
+*   **Access**: Private
+*   **Response**: `200 OK` with the user's saved weekly workout schedule.
+
+**Create/Update Weekly Workout Plan**
+*   **Endpoint**: `PUT /planner/workouts`
+*   **Access**: Private
+*   **Body**: `{ "monday": "Chest & Triceps", "tuesday": "Back & Biceps", ... }`
+*   **Response**: `200 OK` with the updated workout schedule.
+
+---
+
+### Analyzer (NEW)
+
+**Get Nutrition Analysis**
+*   **Endpoint**: `GET /analyzer/nutrition`
+*   **Query Params**: `?period=weekly` (`weekly`, `monthly`, or `all`)
+*   **Access**: Private
+*   **Response**: `200 OK` with aggregated nutrition data (total calories, macros, averages).
+
+**Get Workout Analysis**
+*   **Endpoint**: `GET /analyzer/workouts`
+*   **Query Params**: `?period=monthly` (`weekly`, `monthly`, or `all`)
+*   **Access**: Private
+*   **Response**: `200 OK` with aggregated workout data (total workouts, time, calories burned).
+
+---
+
+### Dashboard
+
+**Get Today's Summary**
+*   **Endpoint**: `GET /dashboard/today`
+*   **Access**: Private
+*   **Response**: `200 OK` with today's summary object (goals, consumed, burned, left).

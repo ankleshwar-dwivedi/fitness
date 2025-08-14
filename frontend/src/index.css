@@ -1,0 +1,42 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+@import "tailwindcss";
+
+/* Define your semantic color variables */
+@theme {
+  --color-light: #f0f4f8;
+  --color-dark: #111827;
+  --color-gray: #383e4a;
+  --color-primary: #050443;
+  --color-secondary: #00b8ff;
+  --color-accent: #00ffff;
+  --color-muted: #6b7280;
+  --color-success: #10b981;
+  --color-danger: #ef4444;
+}
+
+/* Base layer for global styles */
+@layer base {
+  body {
+    @apply bg-light text-dark font-sans antialiased;
+  }
+}
+
+/* Custom styles for a more modern look */
+.glass-card {
+  @apply bg-white/60 backdrop-blur-lg border border-white/20;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  @apply w-2 h-2;
+}
+::-webkit-scrollbar-track {
+  @apply bg-light;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-secondary rounded-full;
+}
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-accent;
+}
