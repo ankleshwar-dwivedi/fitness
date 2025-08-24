@@ -15,7 +15,7 @@ import chatbotRoutesV0 from './api/v0/chatbot/chatbot.routes.js';
 import plannerRoutesV0 from './api/v0/planners/planners.routes.js';
 import adminRoutesV0 from './api/v0/admin/admin.routes.js';
 import waterRoutesV0 from './api/v0/water/water.routes.js';
-
+import libraryRoutesV0 from './api/v0/library/library.routes.js';
 
 const app = express();
 
@@ -58,6 +58,7 @@ app.use('/api/v0/dashboard', dashboardRoutesV0);
 app.use('/api/v0/chatbot', chatbotRoutesV0);
 app.use('/api/v0/planners', plannerRoutesV0);
 app.use('/api/v0/water', waterRoutesV0);
+app.use('/api/v0/library', libraryRoutesV0);
 
 
 // Error Handling

@@ -56,7 +56,7 @@ const Navbar = () => {
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       transition={{ duration: 0.5, ease: 'easeInOut' }}
-      className="w-full h-20 fixed top-0 left-0 bg-white/80 backdrop-blur-lg shadow-md z-50"
+      className="w-full h-20 fixed top-0 left-0 bg-white/80 bg-opacity-5  shadow-md z-50"
     >
       <div className="h-full container mx-auto px-4 flex justify-between items-center">
         <Link to={isAuthenticated ? (user?.isAdmin ? "/admin" : "/dashboard") : "/"} onClick={closeMenu} className="flex items-center gap-2">

@@ -1,44 +1,55 @@
 import axios from 'axios';
 import AppError from '../../utils/AppError.js';
 
-// wger API is free and open-source, no key needed.
 class WgerService {
   constructor() {
-    this.api = axios.create({
-      baseURL: 'https://wger.de/api/v2',
+    this.api = axios.create({    baseURL: 'https://wger.de/api/v2',
+    headers: {
+      Authorization: 'Token a7c76e0bb6f2b32e1d90dd605064f3f41f449134',
+    }
     });
   }
 
-  // Gets a list of exercises for a specific muscle group
-  async getExercisesByMuscle(muscleId = 1) { // 1 = Biceps
+  async getExercisesForMuscles(muscleIds = [], limit = 3) {
     try {
-      const response = await this.api.get(`/exercise/?muscles=${muscleId}&language=2`); // 2 = English
+      const response = await this.api.get('/exercise/', {
+        params: {
+          muscles: muscleIds.join(','),
+          language: 2, // English
+          limit: limit * muscleIds.length // Fetch enough for variety
+        }
+      });
+      // Sanitize HTML from descriptions
       return response.data.results.map(ex => ({
+          id: ex.id,
           name: ex.name,
-          description: ex.description.replace(/<[^>]*>?/gm, '') // Strip HTML tags
+          description: ex.description.replace(/<[^>]*>?/gm, '').trim()
       }));
     } catch (error) {
       console.error('WGER API Error:', error.message);
-      throw new AppError('Failed to fetch exercises from wger.', 502);
+      throw new AppError('Failed to fetch exercises from our provider.', 502);
     }
   }
 
-  // Generates a sample weekly workout plan
+  // Generates a structured 3-day split workout plan
   async generateWorkoutPlan() {
-    // In a real app, you'd fetch for different muscle groups based on user goals
-    const [chest, back, legs] = await Promise.all([
-        this.getExercisesByMuscle(4), // Chest
-        this.getExercisesByMuscle(12), // Back
-        this.getExercisesByMuscle(10), // Legs
+    const pushMuscles = [4, 2, 5]; // Chest, Shoulders, Triceps
+    const pullMuscles = [12, 1, 13]; // Back, Biceps, Forearms
+    const legMuscles = [10, 11, 7]; // Quads, Hamstrings, Calves
+
+    const [pushExercises, pullExercises, legExercises] = await Promise.all([
+      this.getExercisesForMuscles(pushMuscles, 2), // Get 2 exercises for each push muscle
+      this.getExercisesForMuscles(pullMuscles, 2),
+      this.getExercisesForMuscles(legMuscles, 2)
     ]);
 
-    const plan = {
-        monday: { day: 'Chest Day', exercises: chest.slice(0, 3).map(e => ({...e, sets: '3', reps: '10-12'}))},
-        wednesday: { day: 'Back Day', exercises: back.slice(0, 3).map(e => ({...e, sets: '3', reps: '10-12'}))},
-        friday: { day: 'Leg Day', exercises: legs.slice(0, 3).map(e => ({...e, sets: '3', reps: '10-12'}))},
-    };
+    const createDayPlan = (exercises) => exercises.slice(0, 4).map(e => ({...e, sets: '3', reps: '10-12'}));
 
-    return plan;
+    return {
+        monday: { day: 'Push Day (Chest, Shoulders, Triceps)', exercises: createDayPlan(pushExercises)},
+        wednesday: { day: 'Pull Day (Back & Biceps)', exercises: createDayPlan(pullExercises)},
+        friday: { day: 'Leg Day', exercises: createDayPlan(legExercises)},
+    };
   }
 }
 

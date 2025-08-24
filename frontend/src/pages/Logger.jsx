@@ -1,66 +1,76 @@
-import { useState } from 'react';
-import { logMeal, logWorkout, logWater } from '../api';
-import Card from '../components/ui/Card';
-import Input from '../components/ui/Input';
-import Button from '../components/ui/Button';
-import { Utensils, Dumbbell, GlassWater } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { useState } from "react";
+import Card from "../components/ui/Card";
+import { Utensils, Dumbbell, GlassWater } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import MealLogger from "../components/logger/MealLogger";
+import WorkoutLogger from "../components/logger/WorkoutLogger";
+import WaterLogger from "../components/logger/WaterLogger";
+import { useAuth } from "../hooks/useAuth";
+
+const tabs = [
+  { id: "meal", label: "Log Meal", icon: <Utensils /> },
+  { id: "workout", label: "Log Workout", icon: <Dumbbell /> },
+  { id: "water", label: "Log Water", icon: <GlassWater /> },
+];
 
 const Logger = () => {
-    const [meal, setMeal] = useState({ description: '' });
-    const [workout, setWorkout] = useState({ description: '', durationMin: '' });
-    const [water, setWater] = useState({ amount: '' });
-    const [feedback, setFeedback] = useState({ type: '', message: '' });
+  const [activeTab, setActiveTab] = useState("meal");
+  const { refetchData } = useAuth(); // Get refetch function from context
 
-    const showFeedback = (type, message) => {
-        setFeedback({ type, message });
-        setTimeout(() => setFeedback({ type: '', message: '' }), 3000);
-    };
+  // This function will be passed to children to trigger a dashboard update
+  const onLogSuccess = () => {
+    refetchData();
+  };
 
-    const handleMealSubmit = async (e) => { e.preventDefault(); try { await logMeal(meal); showFeedback('success', 'Meal logged!'); setMeal({ description: '' }); } catch (error) { showFeedback('error', 'Failed to log meal.'); } };
-    const handleWorkoutSubmit = async (e) => { e.preventDefault(); try { await logWorkout({ ...workout, durationMin: parseInt(workout.durationMin) }); showFeedback('success', 'Workout logged!'); setWorkout({ description: '', durationMin: '' }); } catch (error) { showFeedback('error', 'Failed to log workout.'); } };
-    const handleWaterSubmit = async (e) => { e.preventDefault(); try { await logWater({ amount: parseInt(water.amount) }); showFeedback('success', `${water.amount}ml water logged!`); setWater({ amount: '' }); } catch (error) { showFeedback('error', 'Failed to log water.'); } };
+  return (
+    <div>
+      <h1 className="text-4xl font-bold text-primary mb-8 animate-fade-in-up">
+        Log Your Day
+      </h1>
 
-    return (
-        <div>
-            <h1 className="text-4xl font-bold text-primary mb-8 animate-fade-in-up">Log Your Day</h1>
-            
-            {feedback.message && (
-                <motion.div
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className={`mb-4 p-3 rounded-lg text-center font-semibold ${feedback.type === 'success' ? 'bg-success/20 text-success' : 'bg-danger/20 text-danger'}`}
-                >
-                    {feedback.message}
-                </motion.div>
+      <div className="mb-6 flex border-b-2 border-light space-x-4">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex items-center gap-2 pb-2 font-semibold transition-colors relative ${
+              activeTab === tab.id
+                ? "text-secondary"
+                : "text-muted hover:text-primary"
+            }`}
+          >
+            {tab.icon} {tab.label}
+            {activeTab === tab.id && (
+              <motion.div
+                className="absolute bottom-[-2px] left-0 right-0 h-[2px] bg-secondary"
+                layoutId="underline"
+              />
             )}
+          </button>
+        ))}
+      </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <Card className="animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-                    <h2 className="text-2xl font-bold text-primary mb-4 flex items-center gap-2"><Utensils /> Log a Meal</h2>
-                    <form onSubmit={handleMealSubmit} className="space-y-4">
-                        <Input placeholder="e.g., Chicken salad" value={meal.description} onChange={(e) => setMeal({ ...meal, description: e.target.value })} />
-                        <Button type="submit" className="w-full">Log Meal</Button>
-                    </form>
-                </Card>
-                <Card className="animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-                    <h2 className="text-2xl font-bold text-primary mb-4 flex items-center gap-2"><Dumbbell /> Log a Workout</h2>
-                    <form onSubmit={handleWorkoutSubmit} className="space-y-4">
-                        <Input placeholder="e.g., Morning run" value={workout.description} onChange={(e) => setWorkout({ ...workout, description: e.target.value })} />
-                        <Input type="number" placeholder="Duration in minutes" value={workout.durationMin} onChange={(e) => setWorkout({ ...workout, durationMin: e.target.value })} />
-                        <Button type="submit" className="w-full">Log Workout</Button>
-                    </form>
-                </Card>
-                <Card className="animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
-                    <h2 className="text-2xl font-bold text-primary mb-4 flex items-center gap-2"><GlassWater /> Log Water</h2>
-                    <form onSubmit={handleWaterSubmit} className="space-y-4">
-                        <Input type="number" placeholder="Amount in ml" value={water.amount} onChange={(e) => setWater({ ...water, amount: e.target.value })} />
-                        <Button type="submit" className="w-full">Log Water</Button>
-                    </form>
-                </Card>
-            </div>
-        </div>
-    );
+      <Card>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ y: 10, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -10, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            {activeTab === "meal" && <MealLogger onLogSuccess={onLogSuccess} />}
+            {activeTab === "workout" && (
+              <WorkoutLogger onLogSuccess={onLogSuccess} />
+            )}
+            {activeTab === "water" && (
+              <WaterLogger onLogSuccess={onLogSuccess} />
+            )}
+          </motion.div>
+        </AnimatePresence>
+      </Card>
+    </div>
+  );
 };
 
 export default Logger;

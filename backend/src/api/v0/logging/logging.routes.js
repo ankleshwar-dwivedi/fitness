@@ -6,7 +6,7 @@ const router = express.Router();
 
 router.post('/meals', protect, logMeal);
 router.post('/workouts', protect, logWorkout);
-router.post('/water', protect, logWater); // New endpoint
+router.post('/water', protect, logWater); // Kept for consistency
 router.get('/date/:date', protect, getLogsForDate);
 
 export default router;

@@ -23,6 +23,7 @@ const config = {
   apiKeys: {
     calorieNinjas: process.env.CALORIE_NINJAS_API_KEY,
     apiNinjasWorkout: process.env.API_NINJAS_WORKOUT_API_KEY,
+    spoonacular: process.env.SPOONACULAR_RAPIDAPI_KEY, // New key
     edamam: {
       appId: process.env.EDAMAM_APP_ID,
       appKey: process.env.EDAMAM_APP_KEY,
