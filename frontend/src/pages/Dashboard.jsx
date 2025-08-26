@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getTodaySummary, getPerformanceReport } from '../api';
+import { getPerformanceReport } from '../api';
 import Spinner from '../components/ui/Spinner';
 import Card from '../components/ui/Card';
 import TodayChart from '../components/charts/TodayChart';
 import PerformanceChart from '../components/charts/PerformanceChart';
-import { Flame, Droplets, Footprints, BarChart } from 'lucide-react';
+import WaterProgress from '../components/charts/WaterProgress';
+import { Flame, Footprints, BarChart } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import Button from '../components/ui/Button';
 
@@ -22,88 +23,79 @@ const StatCard = ({ icon, title, value, unit, color }) => (
 );
 
 const Dashboard = () => {
-    const { fitnessPlan, refetchData } = useAuth();
-    const [summary, setSummary] = useState(null);
+    // FIX IS HERE: Get user, plan, and summary directly from context
+    const { user, fitnessPlan, todaySummary, loading: authLoading } = useAuth();
+    
     const [performance, setPerformance] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const { user } = useAuth();
+    const [loadingPerformance, setLoadingPerformance] = useState(true);
     const [performanceRange, setPerformanceRange] = useState('weekly');
 
     useEffect(() => {
-        const fetchSummary = async () => {
-            setLoading(true);
+        const fetchPerformance = async () => {
+            if (!fitnessPlan) return;
+            setLoadingPerformance(true);
             try {
-                // We refetch the summary to get today's latest logs
-                const { data } = await getTodaySummary();
-                setSummary(data);
+                const { data } = await getPerformanceReport(performanceRange);
+                setPerformance(data);
             } catch (error) {
-                console.error("Dashboard summary fetch error", error);
+                console.error("Performance data fetch error", error);
+                setPerformance(null);
             } finally {
-                setLoading(false);
+                setLoadingPerformance(false);
             }
         };
-        
-        fetchSummary();
-    }, []);
+        fetchPerformance();
+    }, [performanceRange, fitnessPlan]);
 
-    if (loading) return <Spinner size="lg" />;
-
+    // Use the authLoading flag from context
+    if (authLoading) return <Spinner size="lg" />;
     
-    if (!fitnessPlan) {
+    if (!fitnessPlan || !todaySummary?.hasPlan) {
         return (
-            <Card className="text-center p-8 animate-fade-in-up">
+            <Card className="text-center p-8">
                 <h3 className="text-xl font-semibold text-primary">Welcome to your Dashboard!</h3>
-                <p className="text-muted mt-2 mb-6">To get started, please create a fitness profile. This will unlock your personalized dashboard and allow you to track your progress.</p>
-                <Link to="/profile">
-                    <Button>Create Your Profile Now</Button>
-                </Link>
+                <p className="text-muted mt-2 mb-6">To get started, please create a fitness profile to unlock your personalized dashboard.</p>
+                <Link to="/profile"><Button>Create Your Profile</Button></Link>
             </Card>
         );
     }
 
     return (
         <div>
-            <h1 className="text-4xl font-bold text-primary mb-2 animate-fade-in-up">Dashboard</h1>
-            <p className="text-muted mb-8 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>Welcome back, {user?.name?.split(' ')[0]}!</p>
+            <h1 className="text-4xl font-bold text-primary mb-2">Dashboard</h1>
+            <p className="text-muted mb-8">Welcome back, {user?.name?.split(' ')[0]}!</p>
             
-            {/* **THE FIX IS HERE:** We check the hasPlan flag */}
-            {!summary?.hasPlan ? (
-                 <Card className="text-center p-8 animate-fade-in-up">
-                    <h3 className="text-xl font-semibold text-primary">{summary?.message || "Get Started!"}</h3>
-                    <p className="text-muted mt-2 mb-6">Create a fitness plan to unlock your personalized dashboard and start tracking your progress.</p>
-                    <Link to="/profile">
-                        <Button>Create Your Profile</Button>
-                    </Link>
-                 </Card>
-            ) : (
-            <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <StatCard icon={<Flame className="text-red-500" />} title="Consumed" value={summary.caloriesConsumed} unit="kcal" color="bg-red-200" />
-                <StatCard icon={<Footprints className="text-green-500" />} title="Burned" value={summary.caloriesBurned} unit="kcal" color="bg-green-200" />
-                <StatCard icon={<BarChart className="text-blue-500" />} title="Calorie Goal" value={summary.calorieGoal} unit="kcal" color="bg-blue-200" />
-                <StatCard icon={<Droplets className="text-cyan-500" />} title="Water Intake" value={`${summary.waterConsumed / 1000}`} unit="L" color="bg-cyan-200" />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                <StatCard icon={<Flame className="text-red-500" />} title="Consumed" value={todaySummary.caloriesConsumed} unit="kcal" color="bg-red-200" />
+                <StatCard icon={<Footprints className="text-green-500" />} title="Burned" value={todaySummary.caloriesBurned} unit="kcal" color="bg-green-200" />
+                <StatCard icon={<BarChart className="text-blue-500" />} title="Calorie Goal" value={todaySummary.calorieGoal} unit="kcal" color="bg-blue-200" />
             </div>
-            
+
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-                <Card className="lg:col-span-2">
-                    <h2 className="text-2xl font-bold text-primary mb-4">Today's Balance</h2>
-                    <TodayChart data={summary} />
-                </Card>
+                <div className="lg:col-span-2 flex flex-col gap-6">
+                    <Card>
+                        <h2 className="text-2xl font-bold text-primary mb-4">Today's Balance</h2>
+                        <TodayChart data={todaySummary} />
+                    </Card>
+                    <Card>
+                        <WaterProgress consumed={todaySummary.waterConsumed} goal={todaySummary.waterGoal} />
+                    </Card>
+                </div>
                 <Card className="lg:col-span-3">
                     <div className="flex justify-between items-center mb-4">
                         <h2 className="text-2xl font-bold text-primary">Performance</h2>
-                        <div>
-                            <select onChange={(e) => setPerformanceRange(e.target.value)} value={performanceRange} className="bg-light border-none rounded-md p-2 font-semibold text-sm focus:ring-2 focus:ring-secondary">
-                                <option value="weekly">Last 7 Days</option>
-                                <option value="monthly">This Month</option>
-                            </select>
-                        </div>
+                        <select onChange={(e) => setPerformanceRange(e.target.value)} value={performanceRange} className="bg-light border-none rounded-md p-2 font-semibold text-sm focus:ring-2 focus:ring-secondary">
+                            <option value="weekly">Last 7 Days</option>
+                            <option value="monthly">This Month</option>
+                        </select>
                     </div>
-                    {performance ? <PerformanceChart data={performance} /> : <p className="text-muted">Log activities to see performance.</p>}
+                    {loadingPerformance ? <Spinner /> : (
+                        performance && (performance.calorieConsumption.length > 0 || performance.calorieBurn.length > 0)
+                            ? <PerformanceChart data={performance} />
+                            : <p className="text-muted text-center py-10">Log some activities to see your performance chart!</p>
+                    )}
                 </Card>
             </div>
-            </>
-            )}
         </div>
     );
 };

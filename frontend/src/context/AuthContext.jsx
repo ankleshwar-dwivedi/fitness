@@ -6,22 +6,35 @@ export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [fitnessPlan, setFitnessPlan] = useState(null); // New state for fitness plan
+  const [fitnessPlan, setFitnessPlan] = useState(null);
+  const [todaySummary, setTodaySummary] = useState(null); // FIX IS HERE: Add summary state
   const [loading, setLoading] = useState(true);
 
   const fetchInitialData = useCallback(async () => {
+    // This function now fetches everything needed for the dashboard
     try {
       const { data: userData } = await api.get('/users/me');
       setUser(userData);
+      
+      // These calls depend on a user being logged in
       try {
         const { data: planData } = await api.get('/fitness/plan');
         setFitnessPlan(planData);
-      } catch (planError) {
-        setFitnessPlan(null); // No plan exists for the user
+        
+        // Now fetch the summary data as well
+        const { data: summaryData } = await api.get('/dashboard/today');
+        setTodaySummary(summaryData);
+
+      } catch (planOrSummaryError) {
+        // If plan or summary fails, it's not a critical auth error
+        setFitnessPlan(null);
+        setTodaySummary(null);
       }
     } catch (error) {
+      // This catch is for when the user is not authenticated at all
       setUser(null);
       setFitnessPlan(null);
+      setTodaySummary(null);
     } finally {
       setLoading(false);
     }
@@ -35,16 +48,17 @@ export const AuthProvider = ({ children }) => {
     user,
     setUser,
     fitnessPlan,
-    setFitnessPlan, // Expose setter to be used by Profile page
+    setFitnessPlan,
+    todaySummary, // Expose summary data
     isAuthenticated: !!user,
     isAdmin: user?.isAdmin || false,
     loading,
-    refetchData: fetchInitialData // Allow components to trigger a refetch
-  }), [user, fitnessPlan, loading, fetchInitialData]);
+    refetchData: fetchInitialData // This function now refetches everything
+  }), [user, fitnessPlan, todaySummary, loading, fetchInitialData]);
 
   if (loading) {
     return (
-      <div className="w-screen h-screen flex items-center justify-center bg-primary">
+      <div className="w-screen h-screen flex items-center justify-center bg-light">
         <Spinner size="lg" />
       </div>
     );

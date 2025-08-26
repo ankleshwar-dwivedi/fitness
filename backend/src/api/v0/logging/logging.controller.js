@@ -32,25 +32,16 @@ export const logWorkout = asyncHandler(async (req, res, next) => {
 });
 
 export const logWater = asyncHandler(async (req, res, next) => {
-  const { amount, date } = req.body;
-  // **THE FIX IS HERE: Parse to number before validation**
-  const numericAmount = parseInt(amount, 10);
+    const { amount, date } = req.body;
+    // **THE FIX IS HERE: Parse to number before validation**
+    const numericAmount = parseInt(amount, 10);
 
-  if (isNaN(numericAmount) || numericAmount <= 0) {
-    console.error(
-      "Validation Error in logWater: 'amount' is invalid.",
-      req.body
-    );
-    return res
-      .status(400)
-      .json({ message: "A valid, positive water amount (in ml) is required." });
-  }
-  const waterLog = await loggingService.createWaterLog(
-    req.user.id,
-    numericAmount,
-    date
-  );
-  res.status(201).json(waterLog);
+    if (isNaN(numericAmount) || numericAmount <= 0) {
+        console.error("Validation Error in logWater: 'amount' is invalid.", req.body);
+        return res.status(400).json({ message: "A valid, positive water amount (in ml) is required." });
+    }
+    const waterLog = await loggingService.createWaterLog(req.user.id, numericAmount, date);
+    res.status(201).json(waterLog);
 });
 
 export const getLogsForDate = asyncHandler(async (req, res, next) => {

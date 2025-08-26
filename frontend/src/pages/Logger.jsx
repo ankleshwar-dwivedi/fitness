@@ -6,6 +6,7 @@ import MealLogger from "../components/logger/MealLogger";
 import WorkoutLogger from "../components/logger/WorkoutLogger";
 import WaterLogger from "../components/logger/WaterLogger";
 import { useAuth } from "../hooks/useAuth";
+import { useNavigate } from "react-router-dom";
 
 const tabs = [
   { id: "meal", label: "Log Meal", icon: <Utensils /> },
@@ -17,9 +18,12 @@ const Logger = () => {
   const [activeTab, setActiveTab] = useState("meal");
   const { refetchData } = useAuth(); // Get refetch function from context
 
-  // This function will be passed to children to trigger a dashboard update
-  const onLogSuccess = () => {
-    refetchData();
+  
+  const navigate = useNavigate(); // *THIS FIX HERE: Get the navigate function
+
+ // This function will navigate the user back to the dashboard with a refresh flag
+  const handleLogSuccess = () => {
+    navigate('/dashboard', { state: { refresh: true } });
   };
 
   return (
@@ -59,12 +63,14 @@ const Logger = () => {
             exit={{ y: -10, opacity: 0 }}
             transition={{ duration: 0.2 }}
           >
-            {activeTab === "meal" && <MealLogger onLogSuccess={onLogSuccess} />}
+            {activeTab === "meal" && (
+              <MealLogger onLogSuccess={handleLogSuccess} />
+            )}
             {activeTab === "workout" && (
-              <WorkoutLogger onLogSuccess={onLogSuccess} />
+              <WorkoutLogger onLogSuccess={handleLogSuccess} />
             )}
             {activeTab === "water" && (
-              <WaterLogger onLogSuccess={onLogSuccess} />
+              <WaterLogger onLogSuccess={handleLogSuccess} />
             )}
           </motion.div>
         </AnimatePresence>

@@ -15,25 +15,19 @@ const MealLogger = ({ onLogSuccess }) => {
     setTimeout(() => setFeedback({ message: "", isError: false }), 3000);
   };
 
-  const addFoodToMeal = (food) => {
-    // **THE FIX: Ensure the selected food has an ID**
-    if (!food || !food._id) {
-      showFeedback("Could not add selected food. Please try again.", true);
-      return;
-    }
-    const quantity = parseInt(
-      prompt(`Enter quantity for ${food.name} (in grams):`),
-      10
-    );
-    if (!isNaN(quantity) && quantity > 0) {
-      const uniqueKey = `${food._id}-${Date.now()}`;
-      // Use food._id directly for foodId to be safe
-      setMealItems([
-        ...mealItems,
-        { ...food, quantity, foodId: food._id, uniqueKey },
-      ]);
-    }
-  };
+    const addFoodToMeal = (food) => {
+        // **THE FIX: Ensure the selected food has an ID**
+        if (!food || !food._id) {
+            showFeedback("Could not add selected food. Please try again.", true);
+            return;
+        }
+        const quantity = parseInt(prompt(`Enter quantity for ${food.name} (in grams):`), 10);
+        if (!isNaN(quantity) && quantity > 0) {
+            const uniqueKey = `${food._id}-${Date.now()}`;
+            // Use food._id directly for foodId to be safe
+            setMealItems([...mealItems, { ...food, quantity, foodId: food._id, uniqueKey }]);
+        }
+    };
 
   const removeFoodFromMeal = (keyToRemove) => {
     setMealItems(mealItems.filter((item) => item.uniqueKey !== keyToRemove));

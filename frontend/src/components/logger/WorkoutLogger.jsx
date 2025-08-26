@@ -35,26 +35,35 @@ const WorkoutLogger = ({ onLogSuccess }) => {
       return;
     }
     try {
-      let perfData = {};
-      // **THE FIX IS HERE: Robust data parsing and validation**
+      // *THIS FIX HERE: Build the performance data flexibly
+      const perfData = {};
+      const durationMin = parseInt(performance.durationMin, 10);
+      if (!isNaN(durationMin) && durationMin > 0) {
+        perfData.durationMin = durationMin;
+      }
+
       if (logType === "strength") {
         const sets = parseInt(performance.sets, 10);
         const reps = parseInt(performance.reps, 10);
-        const weightKg = parseInt(performance.weightKg, 10) || 0; // Default weight to 0 if empty
+        const weightKg = parseInt(performance.weightKg, 10) || 0;
 
-        if (isNaN(sets) || isNaN(reps)) {
-          showFeedback("Sets and Reps must be valid numbers.", true);
+        if (isNaN(sets) || isNaN(reps) || sets <= 0 || reps <= 0) {
+          showFeedback(
+            "Sets and Reps are required for strength training.",
+            true
+          );
           return;
         }
+        perfData.sets = Array(sets).fill({ reps, weightKg });
+      }
 
-        perfData = { sets: Array(sets).fill({ reps, weightKg }) };
-      } else {
-        const durationMin = parseInt(performance.durationMin, 10);
-        if (isNaN(durationMin)) {
-          showFeedback("Duration must be a valid number.", true);
-          return;
-        }
-        perfData = { durationMin };
+      // *THIS FIX HERE: If perfData is empty, it means user submitted nothing for a cardio exercise
+      if (Object.keys(perfData).length === 0) {
+        showFeedback(
+          "Please enter performance details (e.g., duration, sets, reps).",
+          true
+        );
+        return;
       }
 
       await logWorkout({
@@ -75,7 +84,15 @@ const WorkoutLogger = ({ onLogSuccess }) => {
 
   return (
     <div>
-      {feedback && <p className={`mb-4 text-center font-semibold ${feedback.isError ? 'text-danger' : 'text-success'}`}>{feedback.message}</p>}
+      {feedback && (
+        <p
+          className={`mb-4 text-center font-semibold ${
+            feedback.isError ? "text-danger" : "text-success"
+          }`}
+        >
+          {feedback.message}
+        </p>
+      )}
       <form onSubmit={handleLogWorkout} className="max-w-lg mx-auto space-y-4">
         <SearchableSelect
           onSearch={handleSearch}
@@ -93,44 +110,50 @@ const WorkoutLogger = ({ onLogSuccess }) => {
           placeholder="Search for an exercise..."
         />
 
-        {selectedExercise &&
-          (logType === "strength" ? (
-            <div className="grid grid-cols-3 gap-4">
-              <Input
-                type="number"
-                placeholder="Sets"
-                value={performance.sets}
-                onChange={(e) =>
-                  setPerformance({ ...performance, sets: e.target.value })
-                }
-              />
-              <Input
-                type="number"
-                placeholder="Reps"
-                value={performance.reps}
-                onChange={(e) =>
-                  setPerformance({ ...performance, reps: e.target.value })
-                }
-              />
-              <Input
-                type="number"
-                placeholder="Weight (kg)"
-                value={performance.weightKg}
-                onChange={(e) =>
-                  setPerformance({ ...performance, weightKg: e.target.value })
-                }
-              />
-            </div>
-          ) : (
+        {selectedExercise && (
+          <>
+            {logType === "strength" && (
+              <div className="grid grid-cols-3 gap-4">
+                <Input
+                  type="number"
+                  placeholder="Sets*"
+                  value={performance.sets}
+                  onChange={(e) =>
+                    setPerformance({ ...performance, sets: e.target.value })
+                  }
+                />
+                <Input
+                  type="number"
+                  placeholder="Reps*"
+                  value={performance.reps}
+                  onChange={(e) =>
+                    setPerformance({ ...performance, reps: e.target.value })
+                  }
+                />
+                <Input
+                  type="number"
+                  placeholder="Weight (kg)"
+                  value={performance.weightKg}
+                  onChange={(e) =>
+                    setPerformance({ ...performance, weightKg: e.target.value })
+                  }
+                />
+              </div>
+            )}
             <Input
               type="number"
-              placeholder="Duration (min)"
+              placeholder={
+                logType === "cardio"
+                  ? "Duration (min)*"
+                  : "Optional: Duration (min)"
+              }
               value={performance.durationMin}
               onChange={(e) =>
                 setPerformance({ ...performance, durationMin: e.target.value })
               }
             />
-          ))}
+          </>
+        )}
 
         <Button type="submit" className="w-full" disabled={!selectedExercise}>
           <Dumbbell size={16} className="mr-2" /> Log Workout
