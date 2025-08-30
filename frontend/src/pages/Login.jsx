@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { loginUser, registerUser } from "../api";
+// import { loginUser, registerUser } from "../api";
 import Button from "../components/ui/Button";
 import Input from "../components/ui/Input";
 import { Flame } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
+
+
 
 const Login = () => {
   const [isLoginView, setIsLoginView] = useState(true);
@@ -18,7 +20,8 @@ const Login = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { setUser } = useAuth();
+  
+  const auth = useAuth(); // FIX IS HERE: Get the whole auth object
 
   const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -31,23 +34,28 @@ const Login = () => {
     );
   };
 
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
     try {
-      const { data } = isLoginView
-        ? await loginUser({
-            email: formData.email,
-            password: formData.password,
-          })
-        : await registerUser(formData);
-
-      setUser(data); // Update global auth state
-
-      // The App.jsx routing logic will now handle the redirect automatically.
-      // We can just navigate to the root.
-      navigate("/");
+      // FIX IS HERE: Use the context functions instead of direct API calls
+      if (isLoginView) {
+        await auth.login({
+          email: formData.email,
+          password: formData.password,
+        });
+      } else {
+        if(formData.password !== formData.passwordConfirm) {
+          setError("Passwords do not match.");
+          setLoading(false);
+          return;
+        }
+        await auth.register(formData);
+      }
+      // The redirect logic in App.jsx will handle navigation automatically
+      navigate('/'); 
     } catch (err) {
       setError(err.response?.data?.message || "An unexpected error occurred.");
     } finally {

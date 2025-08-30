@@ -232,11 +232,23 @@ class ChatbotService {
     );
   }
 
-  async getTodaySummary(context) {
-    const summary = await dashboardService.generateTodaySummary(context.userId);
-    const message = `Today's Summary:\n- Calories: ${summary.caloriesConsumed} / ${summary.calorieGoal} kcal\n- Water: ${summary.waterConsumed} / ${summary.waterGoal} ml\nWhat else can I help with?`;
-    return this.buildResponse("INITIAL", context, message);
-  }
+   async getTodaySummary(context) {
+        const summary = await dashboardService.generateTodaySummary(context.userId);
+        
+        // *THE FIX IS HERE: Create a more dynamic and helpful message to hadle inputs
+        const caloriesLeft = summary.calorieGoal - summary.caloriesConsumed;
+        let calorieMessage;
+
+        if (caloriesLeft > 0) {
+            calorieMessage = `You have ${caloriesLeft} kcal remaining.`;
+        } else {
+            calorieMessage = `You are ${Math.abs(caloriesLeft)} kcal over your goal.`;
+        }
+
+        const message = `Today's Summary:\n- Calories: ${summary.caloriesConsumed} / ${summary.calorieGoal} kcal. ${calorieMessage}\n- Water: ${summary.waterConsumed} / ${summary.waterGoal} ml\n\nWhat else can I help with?`;
+        
+        return this.buildResponse("INITIAL", context, message);
+    }
 
   async getFitnessPlan(context) {
     const plan = await fitnessService.getPlanByUserId(context.userId);

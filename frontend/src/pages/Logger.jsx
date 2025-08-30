@@ -1,12 +1,13 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom"; // Import useNavigate
 import Card from "../components/ui/Card";
+import Spinner from "../components/ui/Spinner"; // Import Spinner
 import { Utensils, Dumbbell, GlassWater } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import MealLogger from "../components/logger/MealLogger";
 import WorkoutLogger from "../components/logger/WorkoutLogger";
 import WaterLogger from "../components/logger/WaterLogger";
 import { useAuth } from "../hooks/useAuth";
-import { useNavigate } from "react-router-dom";
 
 const tabs = [
   { id: "meal", label: "Log Meal", icon: <Utensils /> },
@@ -16,18 +17,29 @@ const tabs = [
 
 const Logger = () => {
   const [activeTab, setActiveTab] = useState("meal");
-  const { refetchData } = useAuth(); // Get refetch function from context
+  const { refetchData } = useAuth();
+  const navigate = useNavigate();
+  const [isLogging, setIsLogging] = useState(false); // FIX IS HERE: Add loading state
 
-  
-  const navigate = useNavigate(); // *THIS FIX HERE: Get the navigate function
-
- // This function will navigate the user back to the dashboard with a refresh flag
-  const handleLogSuccess = () => {
-    navigate('/dashboard', { state: { refresh: true } });
+  const handleLogSuccess = async () => {
+    setIsLogging(true); // Show loading overlay
+    await refetchData(); // Wait for all data to be refreshed
+    setIsLogging(false); // Hide overlay
+    navigate("/dashboard"); // Navigate AFTER data is fresh
   };
 
   return (
     <div>
+      {/* FIX IS HERE: Loading overlay */}
+      {isLogging && (
+        <div className="fixed inset-0 bg-white/80 flex flex-col items-center justify-center z-50">
+          <Spinner size="lg" />
+          <p className="mt-4 font-semibold text-primary">
+            Updating Your Dashboard...
+          </p>
+        </div>
+      )}
+
       <h1 className="text-4xl font-bold text-primary mb-8 animate-fade-in-up">
         Log Your Day
       </h1>

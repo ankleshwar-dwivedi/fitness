@@ -17,7 +17,7 @@ const workoutLogSchema = new mongoose.Schema({
   caloriesBurned: { type: Number, required: true, default: 0 },
 }, { timestamps: true });
 
-// *This FIX IS HERE: The incorrect unique index has been removed.
+// *The FIX IS HERE: The incorrect unique index has been removed.
 // We only need to index for performance.
 workoutLogSchema.index({ user: 1, date: 1 });
 

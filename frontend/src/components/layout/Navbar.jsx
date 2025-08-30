@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { LogOut, Flame, Menu, X, ShieldCheck } from 'lucide-react';
-import { useAuth } from '../../hooks/useAuth';
-import { logoutUser } from '../../api';
 import { motion, AnimatePresence } from 'framer-motion';
 import Button from '../ui/Button';
+import { useAuth } from '../../hooks/useAuth';
 
 const NavItem = ({ to, children, onClick }) => (
   <NavLink
@@ -39,14 +38,16 @@ const AdminNavLinks = ({ onLinkClick }) => (
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
-  const { isAuthenticated, user, setUser } = useAuth();
+  // *FIX IS HERE: Get the logout function from context
+  const { isAuthenticated, user, logout } = useAuth();
 
   const handleLogout = async () => {
     try {
-      await logoutUser();
-      setUser(null);
+      await logout(); // Call the context logout function
       navigate('/');
-    } catch (error) { console.error('Logout failed:', error); }
+    } catch (error) { 
+      console.error('Logout failed:', error); 
+    }
   };
 
   const closeMenu = () => setIsOpen(false);

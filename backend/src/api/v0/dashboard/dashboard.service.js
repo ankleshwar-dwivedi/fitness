@@ -13,7 +13,6 @@ const getStartOfDayUTC = (date) => {
 
 class DashboardService {
   async generateTodaySummary(userId) {
-    // ... (This function remains the same)
     const today = getStartOfDayUTC(new Date());
 
     const [plan, todayMeals, todayWorkouts, todayWater] = await Promise.all([
@@ -38,24 +37,21 @@ class DashboardService {
       };
     }
 
-    const caloriesConsumed = todayMeals.reduce(
-      (sum, meal) => sum + meal.totalCalories,
-      0
-    ); // Corrected to use totalCalories
-    const caloriesBurned = todayWorkouts.reduce(
-      (sum, workout) => sum + workout.caloriesBurned,
-      0
-    );
+
+       // FIX IS HERE: Use 'meal.totalCalories' which is the correct field from mealLog.model.js
+    const caloriesConsumed = todayMeals.reduce((sum, meal) => sum + meal.totalCalories, 0);
+    const caloriesBurned = todayWorkouts.reduce((sum, workout) => sum + workout.caloriesBurned, 0);
     const waterConsumed = todayWater.reduce((sum, log) => sum + log.amount, 0);
 
-    return {
+
+     return {
       hasPlan: true,
       calorieGoal: plan.tdee,
       caloriesConsumed,
       caloriesBurned,
       caloriesLeft: plan.tdee - caloriesConsumed + caloriesBurned,
       waterConsumed,
-      waterGoal: 3000, // A default goal
+      waterGoal: 3000,
       summary: {
         meals: todayMeals,
         workouts: todayWorkouts,

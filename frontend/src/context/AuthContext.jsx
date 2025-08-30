@@ -1,37 +1,35 @@
-import { createContext, useState, useEffect, useMemo, useCallback } from 'react';
-import api from '../api';
-import Spinner from '../components/ui/Spinner';
+import {
+  createContext,
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+} from "react";
+import api from "../api";
+import Spinner from "../components/ui/Spinner";
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [fitnessPlan, setFitnessPlan] = useState(null);
-  const [todaySummary, setTodaySummary] = useState(null); // FIX IS HERE: Add summary state
+  const [todaySummary, setTodaySummary] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchInitialData = useCallback(async () => {
-    // This function now fetches everything needed for the dashboard
+  // This function is now the single source of truth for fetching all user-related data
+  const refetchData = useCallback(async () => {
+    setLoading(true);
     try {
-      const { data: userData } = await api.get('/users/me');
+      const { data: userData } = await api.get("/users/me");
       setUser(userData);
-      
-      // These calls depend on a user being logged in
-      try {
-        const { data: planData } = await api.get('/fitness/plan');
-        setFitnessPlan(planData);
-        
-        // Now fetch the summary data as well
-        const { data: summaryData } = await api.get('/dashboard/today');
-        setTodaySummary(summaryData);
 
-      } catch (planOrSummaryError) {
-        // If plan or summary fails, it's not a critical auth error
-        setFitnessPlan(null);
-        setTodaySummary(null);
-      }
+      const { data: planData } = await api.get("/fitness/plan");
+      setFitnessPlan(planData);
+
+      const { data: summaryData } = await api.get("/dashboard/today");
+      setTodaySummary(summaryData);
     } catch (error) {
-      // This catch is for when the user is not authenticated at all
+      // This will be hit if the token is invalid or the user has no plan yet
       setUser(null);
       setFitnessPlan(null);
       setTodaySummary(null);
@@ -41,21 +39,51 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    fetchInitialData();
-  }, [fetchInitialData]);
+    // We still run this on initial load to check for an existing session cookie
+    refetchData();
+  }, [refetchData]);
 
-  const authContextValue = useMemo(() => ({
-    user,
-    setUser,
-    fitnessPlan,
-    setFitnessPlan,
-    todaySummary, // Expose summary data
-    isAuthenticated: !!user,
-    isAdmin: user?.isAdmin || false,
-    loading,
-    refetchData: fetchInitialData // This function now refetches everything
-  }), [user, fitnessPlan, todaySummary, loading, fetchInitialData]);
+  // FIX IS HERE: Centralized authentication functions
+  const login = async (credentials) => {
+    const { data } = await api.post("/auth/login", credentials);
+    // After logging in via API, refetch all associated data
+    await refetchData();
+    return data;
+  };
 
+  const register = async (userData) => {
+    const { data } = await api.post("/auth/register", userData);
+    // After registering, refetch all data to establish the session
+    await refetchData();
+    return data;
+  };
+
+  const logout = async () => {
+    await api.post("/auth/logout");
+    // Clear all state locally after logging out
+    setUser(null);
+    setFitnessPlan(null);
+    setTodaySummary(null);
+  };
+
+  const authContextValue = useMemo(
+    () => ({
+      user,
+      fitnessPlan,
+      todaySummary,
+      isAuthenticated: !!user,
+      isAdmin: user?.isAdmin || false,
+      loading,
+      refetchData,
+      // Expose the new functions
+      login,
+      register,
+      logout,
+    }),
+    [user, fitnessPlan, todaySummary, loading, refetchData]
+  );
+
+  // The initial loading screen is now more robust
   if (loading) {
     return (
       <div className="w-screen h-screen flex items-center justify-center bg-light">
