@@ -43,7 +43,7 @@ export const AuthProvider = ({ children }) => {
     refetchData();
   }, [refetchData]);
 
-  // FIX IS HERE: Centralized authentication functions
+  // *FIX IS HERE: Centralized authentication functions
   const login = async (credentials) => {
     const { data } = await api.post("/auth/login", credentials);
     // After logging in via API, refetch all associated data
@@ -75,7 +75,7 @@ export const AuthProvider = ({ children }) => {
       isAdmin: user?.isAdmin || false,
       loading,
       refetchData,
-      // Expose the new functions
+      // add the new functions
       login,
       register,
       logout,

@@ -6,6 +6,7 @@ import Exercise from "../library/exercise.model.js";
 import FitnessPlan from "../fitness/fitness.model.js";
 import { updateStreaks } from "../../../services/streaks.service.js";
 import AppError from "../../../utils/AppError.js";
+import WeightLog from './weightLog.model.js'; // NEW FEATURE: Import the new weight model
 import mongoose from "mongoose";
 
 // Helper to normalize date to the start of the day in UTC
@@ -137,6 +138,27 @@ class LoggingService {
     ]);
     const totalWater = water.reduce((sum, log) => sum + log.amount, 0);
     return { meals, workouts, water: { logs: water, total: totalWater } };
+  }
+
+  //for new weight log feature
+  async createWeightLog(userId, weightKg, dateStr) {
+    const parsedWeight = parseFloat(weightKg);
+    if (isNaN(parsedWeight) || parsedWeight <= 0) {
+      throw new AppError("A valid, positive weight is required.", 400);
+    }
+    const date = normalizeDate(dateStr || new Date());
+    
+    // Use findOneAndUpdate with upsert to create or update the log for the given day
+    const weightLog = await WeightLog.findOneAndUpdate(
+      { user: userId, date: date },
+      { weightKg: parsedWeight },
+      { new: true, upsert: true, runValidators: true }
+    );
+    
+    // Also, update the user's main fitness plan with their latest weight
+    await FitnessPlan.findOneAndUpdate({ user: userId }, { weightKg: parsedWeight });
+    
+    return weightLog;
   }
 }
 

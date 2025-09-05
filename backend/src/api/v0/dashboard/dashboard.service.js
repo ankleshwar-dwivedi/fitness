@@ -2,9 +2,9 @@ import FitnessPlan from "../fitness/fitness.model.js";
 import MealLog from "../logging/mealLog.model.js";
 import WorkoutLog from "../logging/workoutLog.model.js";
 import WaterLog from "../water/waterLog.model.js";
-import mongoose from "mongoose"; // FIX IS HERE: Add missing mongoose import
+import WeightLog from "../logging/weightLog.model.js";
+import mongoose from "mongoose";
 
-// Helper to get the start of the day in UTC
 const getStartOfDayUTC = (date) => {
   const d = new Date(date);
   d.setUTCHours(0, 0, 0, 0);
@@ -16,10 +16,10 @@ class DashboardService {
     const today = getStartOfDayUTC(new Date());
 
     const [plan, todayMeals, todayWorkouts, todayWater] = await Promise.all([
-      FitnessPlan.findOne({ user: userId }),
-      MealLog.find({ user: userId, date: today }),
-      WorkoutLog.find({ user: userId, date: today }),
-      WaterLog.find({ user: userId, date: today }),
+      FitnessPlan.findOne({ user: userId }).lean(),
+      MealLog.find({ user: userId, date: today }).lean(),
+      WorkoutLog.find({ user: userId, date: today }).lean(),
+      WaterLog.find({ user: userId, date: today }).lean(),
     ]);
 
     if (!plan) {
@@ -36,15 +36,22 @@ class DashboardService {
         summary: { meals: [], workouts: [] },
       };
     }
-
-
-       // FIX IS HERE: Use 'meal.totalCalories' which is the correct field from mealLog.model.js
-    const caloriesConsumed = todayMeals.reduce((sum, meal) => sum + meal.totalCalories, 0);
-    const caloriesBurned = todayWorkouts.reduce((sum, workout) => sum + workout.caloriesBurned, 0);
+    const caloriesConsumed = todayMeals.reduce(
+      (sum, meal) => sum + meal.totalCalories,
+      0
+    );
+    const caloriesBurned = todayWorkouts.reduce(
+      (sum, workout) => sum + workout.caloriesBurned,
+      0
+    );
     const waterConsumed = todayWater.reduce((sum, log) => sum + log.amount, 0);
 
+    // NEW: Define a workout calorie goal, e.g., 15% of TDEE or a minimum of 300
+    const workoutCalorieGoal = Math.max(300, Math.round(plan.tdee * 0.15));
+    const surplusCalories =
+      caloriesConsumed - plan.tdee + (workoutCalorieGoal - caloriesBurned);
 
-     return {
+    return {
       hasPlan: true,
       calorieGoal: plan.tdee,
       caloriesConsumed,
@@ -52,10 +59,8 @@ class DashboardService {
       caloriesLeft: plan.tdee - caloriesConsumed + caloriesBurned,
       waterConsumed,
       waterGoal: 3000,
-      summary: {
-        meals: todayMeals,
-        workouts: todayWorkouts,
-      },
+      workoutCalorieGoal, // NEW
+      surplusCalories, // NEW
     };
   }
 
@@ -66,42 +71,47 @@ class DashboardService {
     if (range === "monthly") {
       startDate = new Date(now.getFullYear(), now.getMonth(), 1);
     } else {
-      // Default to weekly
       startDate = new Date(now.setDate(now.getDate() - 7));
     }
     startDate = getStartOfDayUTC(startDate);
 
-    // This will now work because mongoose is imported
-    const calorieConsumption = await MealLog.aggregate([
-      {
-        $match: {
-          user: new mongoose.Types.ObjectId(userId),
-          date: { $gte: startDate },
-        },
-      },
-      {
-        $group: {
-          _id: { $dateToString: { format: "%Y-%m-%d", date: "$date" } },
-          totalCalories: { $sum: "$totalCalories" }, // Corrected field name
-        },
-      },
-      { $sort: { _id: 1 } },
-    ]);
+    const matchCriteria = {
+      user: new mongoose.Types.ObjectId(userId),
+      date: { $gte: startDate },
+    };
 
-    const calorieBurn = await WorkoutLog.aggregate([
-      {
-        $match: {
-          user: new mongoose.Types.ObjectId(userId),
-          date: { $gte: startDate },
+    const [calorieConsumption, calorieBurn, weightHistory] = await Promise.all([
+      MealLog.aggregate([
+        { $match: matchCriteria },
+        {
+          $group: {
+            _id: { $dateToString: { format: "%Y-%m-%d", date: "$date" } },
+            totalCalories: { $sum: "$totalCalories" },
+          },
         },
-      },
-      {
-        $group: {
-          _id: { $dateToString: { format: "%Y-%m-%d", date: "$date" } },
-          totalCaloriesBurned: { $sum: "$caloriesBurned" },
+        { $sort: { _id: 1 } },
+      ]),
+      WorkoutLog.aggregate([
+        { $match: matchCriteria },
+        {
+          $group: {
+            _id: { $dateToString: { format: "%Y-%m-%d", date: "$date" } },
+            totalCaloriesBurned: { $sum: "$caloriesBurned" },
+          },
         },
-      },
-      { $sort: { _id: 1 } },
+        { $sort: { _id: 1 } },
+      ]),
+      WeightLog.aggregate([
+        { $match: matchCriteria },
+        {
+          $project: {
+            _id: 0,
+            date: { $dateToString: { format: "%Y-%m-%d", date: "$date" } },
+            weight: "$weightKg",
+          },
+        },
+        { $sort: { date: 1 } },
+      ]),
     ]);
 
     return {
@@ -109,6 +119,7 @@ class DashboardService {
       startDate,
       calorieConsumption,
       calorieBurn,
+      weightHistory, // ADDED
     };
   }
 }

@@ -38,6 +38,7 @@ export const logMeal = (data) => api.post('/log/meals', data);
 export const logWorkout = (data) => api.post('/log/workouts', data);
 export const logWater = (data) => api.post('/log/water', data);
 export const getLogsForDate = (date) => api.get(`/log/date/${date}`);
+export const logWeight = (data) => api.post('/log/weight', data); // weight feature
 
 // === DASHBOARD & PERFORMANCE ===
 export const getTodaySummary = () => api.get('/dashboard/today');

@@ -2,17 +2,19 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom"; // Import useNavigate
 import Card from "../components/ui/Card";
 import Spinner from "../components/ui/Spinner"; // Import Spinner
-import { Utensils, Dumbbell, GlassWater } from "lucide-react";
+import { Utensils, Dumbbell, GlassWater, Weight } from "lucide-react"; // Add Weight icon
 import { motion, AnimatePresence } from "framer-motion";
 import MealLogger from "../components/logger/MealLogger";
 import WorkoutLogger from "../components/logger/WorkoutLogger";
 import WaterLogger from "../components/logger/WaterLogger";
 import { useAuth } from "../hooks/useAuth";
+import WeightLogger from "../components/logger/WeightLogger"; // Import new component for weight feature
 
 const tabs = [
   { id: "meal", label: "Log Meal", icon: <Utensils /> },
   { id: "workout", label: "Log Workout", icon: <Dumbbell /> },
   { id: "water", label: "Log Water", icon: <GlassWater /> },
+  { id: "weight", label: "Log Weight", icon: <Weight /> }, // NEW: Add weight tab
 ];
 
 const Logger = () => {
@@ -84,6 +86,10 @@ const Logger = () => {
             {activeTab === "water" && (
               <WaterLogger onLogSuccess={handleLogSuccess} />
             )}
+            {activeTab === "weight" && (
+              <WeightLogger onLogSuccess={handleLogSuccess} />
+            )}{" "}
+            {/* Finally NEW Feature: Render weight component */}
           </motion.div>
         </AnimatePresence>
       </Card>

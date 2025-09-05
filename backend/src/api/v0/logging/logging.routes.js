@@ -1,5 +1,5 @@
 import express from 'express';
-import { logMeal, logWorkout, logWater, getLogsForDate } from './logging.controller.js';
+import { logMeal, logWorkout, logWater, getLogsForDate, logWeight } from './logging.controller.js';
 import { protect } from '../../../middleware/auth.middleware.js';
 
 const router = express.Router();
@@ -8,5 +8,5 @@ router.post('/meals', protect, logMeal);
 router.post('/workouts', protect, logWorkout);
 router.post('/water', protect, logWater); // Kept for consistency
 router.get('/date/:date', protect, getLogsForDate);
-
+router.post('/weight', protect, logWeight); // For weight feature
 export default router;
